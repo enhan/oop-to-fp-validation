@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 import arrow.data.*
 import arrow.core.*
 import arrow.core.extensions.option.monad.*
+import arrow.data.extensions.nonemptylist.foldable.reduceLeftOption
 import arrow.data.extensions.nonemptylist.semigroup.semigroup
 import arrow.data.extensions.validated.applicative.applicative
 import com.google.common.net.HostAndPort
@@ -40,9 +41,9 @@ open class AlertsControllerRefactored {
         log.info("Calling service (actually, doing nothing).")
     }
 
-    private fun format(err: NonEmptyList<AlertCreationError>): String = err.foldLeft("") { acc, e ->
+    private fun format(err: NonEmptyList<AlertCreationError>): String = err.map{it.toString()}.reduceLeftOption { acc, e ->
         "$acc,$e"
-    }
+    }.getOrElse { "" }
 
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_UTF8_VALUE])
     fun createAlert(@RequestBody payload: AlertPayload): ResponseEntity<String> = run {
