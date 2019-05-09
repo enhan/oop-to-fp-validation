@@ -1,23 +1,21 @@
 package eu.enhan.validation
 
+import arrow.core.Option
+import arrow.core.Try
+import arrow.core.extensions.option.monad.binding
+import arrow.core.getOrElse
+import arrow.data.*
+import arrow.data.extensions.nonemptylist.semigroup.semigroup
+import arrow.data.extensions.validated.applicative.applicative
+import com.google.common.net.HostAndPort
+import eu.enhan.validation.AlertCreationError.*
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-
-import arrow.data.*
-import arrow.core.*
-import arrow.core.extensions.option.monad.*
-import arrow.data.extensions.nonemptylist.foldable.reduceLeftOption
-import arrow.data.extensions.nonemptylist.semigroup.semigroup
-import arrow.data.extensions.validated.applicative.applicative
-import com.google.common.net.HostAndPort
-
-import eu.enhan.validation.AlertCreationError.*
-import org.springframework.http.ResponseEntity
-
 
 
 data class AlertRefactored(
@@ -32,7 +30,7 @@ data class AlertRefactored(
 
 
 @RestController
-@RequestMapping("/refactored/alerts")
+@RequestMapping("/alerts/v3")
 open class AlertsControllerRefactored {
 
     val log = LoggerFactory.getLogger(AlertsControllerRefactored::class.java)
@@ -41,12 +39,18 @@ open class AlertsControllerRefactored {
         log.info("Calling service (actually, doing nothing).")
     }
 
-    private fun format(err: NonEmptyList<AlertCreationError>): String = err.map{it.toString()}.reduceLeftOption { acc, e ->
-        "$acc,$e"
-    }.getOrElse { "" }
+    private fun format(err: NonEmptyList<AlertCreationError>): Array<String> = err.map{ when (it) {
+        is ThresholdATooLow -> "ThresholdA '${it.incorrectValue}' is too low. Min allowed value is ${it.minAllowedValue}"
+        is ThresholdCTooHigh -> "ThresholdC '${it.incorrectValue}' is too high. Max allowed value is ${it.maxAllowedValue}"
+        is ThresholdBNotInBetween -> "ThresholdB '${it.incorrectValue}' is not between ${it.suppliedA} and ${it.suppliedC}"
+        ThresholdBNotValidated -> "ThresholdB wasn't validated due to other errors"
+        is InvalidMetric -> "'${it.incorrectValue}' is not a valid metric"
+        NameEmpty -> "Name must not be empty"
+        is InvalidHost -> "'${it.incorrectValue}' is not a valid host"
+    }}.all.toTypedArray()
 
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_UTF8_VALUE])
-    fun createAlert(@RequestBody payload: AlertPayload): ResponseEntity<String> = run {
+    fun createAlert(@RequestBody payload: AlertPayload): ResponseEntity<Array<String>> = run {
 
 
         val validationResult: ValidatedNel<AlertCreationError, AlertRefactored> = validate(payload)

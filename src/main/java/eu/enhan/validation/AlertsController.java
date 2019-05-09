@@ -21,14 +21,14 @@ import com.google.common.net.HostAndPort;
 @RequestMapping("/alerts")
 public class AlertsController {
 
-    public static final Logger log = LoggerFactory.getLogger(AlertsController.class);
+    private static final Logger log = LoggerFactory.getLogger(AlertsController.class);
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public String createAlert(@RequestBody AlertPayload alert) {
         // Validation
         String name;
         if (alert.getName().isEmpty())
-            throw new BadRequestException("name", alert.getName());
+            throw new BadRequestException("name",  alert.getName());
         else
             name = alert.getName();
 
