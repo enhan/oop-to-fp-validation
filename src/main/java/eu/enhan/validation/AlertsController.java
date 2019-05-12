@@ -59,12 +59,6 @@ public class AlertsController {
         return "created";
     }
 
-    @PostMapping("/v2")
-    public String createAlert2(@RequestBody @Valid Alert a) {
-        log.info("{}", a);
-        return "created";
-    }
-
     @ExceptionHandler
     public ResponseEntity<BadRequestPayload> handleBadRequest(BadRequestException ex) {
         return ResponseEntity.badRequest().body(new BadRequestPayload(ex.getMessage()));
@@ -80,5 +74,23 @@ public class AlertsController {
     private void callService(String name, Metrics m, int tA, int tB, int tC, HostAndPort host) {
         log.info("Calling service (actually, doing nothing).");
     }
+
+
+
+
+
+
+
+
+
+
+
+    @PostMapping("/v2")
+    public String createAlert2(@RequestBody @Valid Alert a) {
+        log.info("{}", a);
+        return "created";
+    }
+
+
 
 }

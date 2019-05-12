@@ -16,7 +16,7 @@ public class Alert {
     private Metrics metric;
 
     @NotNull
-    @NotBlank // What happen if we put this on an int field ? Typesafety ?
+    @NotBlank // What happen if we put this on an int field ?
     private String name;
 
     @Min(100)
