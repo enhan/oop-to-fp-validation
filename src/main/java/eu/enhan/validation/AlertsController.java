@@ -36,7 +36,7 @@ public class AlertsController {
 
         int tA;
         if (alert.getThresholdA() < Constants.MIN_T_A)
-            throw new BadRequestException("thresholdA must be > 100" );
+            throw new BadRequestException("thresholdA must be >= 100" );
         else
             tA = alert.getThresholdA();
 
@@ -44,7 +44,7 @@ public class AlertsController {
         if (alert.getThresholdC() > Constants.MAX_T_C)
             throw new BadRequestException("thresholdC must be < 1000");
         else
-            tC = alert.getThresholdB();
+            tC = alert.getThresholdC();
 
         int tB;
         if (alert.getThresholdB() < tA || alert.getThresholdB() > tC)

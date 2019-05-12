@@ -65,24 +65,6 @@ open class AlertsControllerRefactored {
 
     }
 
-    // As an exercise, Live code it...
-    private fun liveValidate(payload: AlertPayload): ValidatedNel<AlertCreationError, AlertRefactored> = TODO()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private fun validate(payload: AlertPayload): ValidatedNel<AlertCreationError, AlertRefactored> = run {
         val validateName: Validated<NameEmpty, String> = validateName(payload.name)
         val validateMetric: Validated<InvalidMetric, Metrics> = validateMetric(payload.metric)
@@ -106,7 +88,8 @@ open class AlertsControllerRefactored {
 
     }
 
-    private fun validateName(name: String?): Validated<NameEmpty, String> = if (name.isNullOrBlank()) NameEmpty.invalid() else name.valid()
+    private fun validateName(name: String?): Validated<NameEmpty, String> =
+        if (name.isNullOrBlank()) NameEmpty.invalid() else name.valid()
 
     private fun validateMetric(metric: String?): Validated<InvalidMetric, Metrics> = Validated.fromTry(Try {
         Metrics.valueOf(metric ?: "") // Making it concise...
@@ -126,7 +109,8 @@ open class AlertsControllerRefactored {
     else
         thresholdC.valid()
 
-    private fun validateTB(rawTB: Int, otA: Option<Int>, otC: Option<Int>): Validated<AlertCreationError, Int> = binding {
+    private fun validateTB(rawTB: Int, otA: Option<Int>, otC: Option<Int>): Validated<AlertCreationError, Int> =
+        binding {
         val tA = otA.bind()
         val tC = otC.bind()
         if (rawTB < tA || rawTB > tC)
@@ -136,7 +120,6 @@ open class AlertsControllerRefactored {
     }.getOrElse {
         ThresholdBNotValidated.invalid()
     }
-
 
 }
 
