@@ -19,6 +19,8 @@ sealed class AlertCreationError {
 
     object NameEmpty: AlertCreationError()
 
+    object HostEmpty: AlertCreationError()
+
     data class InvalidHost(val incorrectValue: String?): AlertCreationError()
 
 }

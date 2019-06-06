@@ -45,6 +45,7 @@ open class AlertsControllerRefactored {
         is InvalidHost -> "'${it.incorrectValue}' is not a valid host"
         ThresholdsPartiallyValidated -> "ThresholdB was not validated because ThresholdA or ThresholdC contains error"
         is InvalidThresholdOrder -> "Thresholds must respect thresholdA < thresholdB < thresholdC"
+        HostEmpty -> "Target must not be empty"
     }}.all.toTypedArray()
 
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_UTF8_VALUE])
@@ -66,7 +67,7 @@ open class AlertsControllerRefactored {
     private fun validate(payload: AlertPayload): ValidatedNel<AlertCreationError, AlertRefactored> = run {
         val validateName: Validated<NameEmpty, String> = validateName(payload.name)
         val validateMetric: Validated<InvalidMetric, Metrics> = validateMetric(payload.metric)
-        val validateHost: Validated<InvalidHost, HostAndPort> = validateHost(payload.target)
+        val validateHost: Validated<AlertCreationError, HostAndPort> = validateHost(payload.target)
         val validateThresholdA: Validated<ThresholdATooLow, Int> = validateTA(payload.thresholdA)
         val validateThresholdC: Validated<ThresholdCTooHigh, Int> = validateTC(payload.thresholdC)
         // Validation of ThresholdB depends on A and C
@@ -94,9 +95,11 @@ open class AlertsControllerRefactored {
         Metrics.valueOf(metric ?: "") // Making it concise...
     }).leftMap { InvalidMetric(metric) }
 
-    private fun validateHost(rawHost: String?): Validated<InvalidHost, HostAndPort> = Validated.fromTry(Try {
-        HostAndPort.fromString(rawHost ?: "") // Can be more precise!
-    }).leftMap { InvalidHost(rawHost) }
+    private fun validateHost(rawHost: String?): Validated<AlertCreationError, HostAndPort> =
+        if (rawHost.isNullOrBlank()) HostEmpty.invalid()
+         else Validated.fromTry(Try {
+            HostAndPort.fromString(rawHost)
+        }).leftMap { InvalidHost(rawHost) }
 
     private fun validateTA(thresholdA: Int): Validated<ThresholdATooLow, Int> = if (thresholdA < Constants.MIN_T_A)
         ThresholdATooLow(thresholdA, Constants.MIN_T_A).invalid()
