@@ -1,9 +1,7 @@
 package eu.enhan.validation
 
-import arrow.core.Option
-import arrow.core.Try
-import arrow.core.extensions.option.monad.binding
-import arrow.core.getOrElse
+import arrow.core.*
+import arrow.core.extensions.option.applicative.applicative
 import arrow.data.*
 import arrow.data.extensions.nonemptylist.semigroup.semigroup
 import arrow.data.extensions.validated.applicative.applicative
@@ -39,14 +37,14 @@ open class AlertsControllerRefactored {
         log.info("Calling service (actually, doing nothing).")
     }
 
-    private fun format(err: NonEmptyList<AlertCreationError>): Array<String> = err.map{ when (it) {
+    private fun format(err: NonEmptyList<AlertCreationError>): Array<String> =err.map{ when (it) {
         is ThresholdATooLow -> "ThresholdA '${it.incorrectValue}' is too low. Min allowed value is ${it.minAllowedValue}"
         is ThresholdCTooHigh -> "ThresholdC '${it.incorrectValue}' is too high. Max allowed value is ${it.maxAllowedValue}"
-        is ThresholdBNotInBetween -> "ThresholdB '${it.incorrectValue}' is not between ${it.suppliedA} and ${it.suppliedC}"
-        ThresholdBNotValidated -> "ThresholdB wasn't validated due to other errors"
         is InvalidMetric -> "'${it.incorrectValue}' is not a valid metric"
         NameEmpty -> "Name must not be empty"
         is InvalidHost -> "'${it.incorrectValue}' is not a valid host"
+        ThresholdsPartiallyValidated -> "ThresholdB was not validated because ThresholdA or ThresholdC contains error"
+        is InvalidThresholdOrder -> "Thresholds must respect thresholdA < thresholdB < thresholdC"
     }}.all.toTypedArray()
 
     @PostMapping(consumes = [MediaType.APPLICATION_JSON_UTF8_VALUE])
@@ -72,7 +70,8 @@ open class AlertsControllerRefactored {
         val validateThresholdA: Validated<ThresholdATooLow, Int> = validateTA(payload.thresholdA)
         val validateThresholdC: Validated<ThresholdCTooHigh, Int> = validateTC(payload.thresholdC)
         // Validation of ThresholdB depends on A and C
-        val validateThresholdB: Validated<AlertCreationError, Int> = validateTB(payload.thresholdB, validateThresholdA.toOption(), validateThresholdC.toOption())
+        val validateThresholdB: Validated<AlertCreationError, Int> =
+            validateTB(validateThresholdA.toOption(),  payload.thresholdB.some(), validateThresholdC.toOption())
 
         Validated.applicative(NonEmptyList.semigroup<AlertCreationError>()).map(
             validateName.toValidatedNel(),
@@ -96,7 +95,7 @@ open class AlertsControllerRefactored {
     }).leftMap { InvalidMetric(metric) }
 
     private fun validateHost(rawHost: String?): Validated<InvalidHost, HostAndPort> = Validated.fromTry(Try {
-        HostAndPort.fromString(rawHost ?: "")
+        HostAndPort.fromString(rawHost ?: "") // Can be more precise!
     }).leftMap { InvalidHost(rawHost) }
 
     private fun validateTA(thresholdA: Int): Validated<ThresholdATooLow, Int> = if (thresholdA < Constants.MIN_T_A)
@@ -109,17 +108,14 @@ open class AlertsControllerRefactored {
     else
         thresholdC.valid()
 
-    private fun validateTB(rawTB: Int, otA: Option<Int>, otC: Option<Int>): Validated<AlertCreationError, Int> =
-        binding {
-        val tA = otA.bind()
-        val tC = otC.bind()
-        if (rawTB < tA || rawTB > tC)
-            ThresholdBNotInBetween(rawTB, tA, tC).invalid()
-        else
-            rawTB.valid()
-    }.getOrElse {
-        ThresholdBNotValidated.invalid()
-    }
+    private fun validateTB(tA: Option<Int>, tB: Option<Int>, tC: Option<Int>): Validated<AlertCreationError, Int> = Option.applicative().map(tA, tB, tC){
+        val (a, b, c) = it
+        if (a < b && b < c)
+            b.valid()
+        else {
+            InvalidThresholdOrder(a, b, c).invalid()
+        }
+    }.fix().getOrElse { ThresholdsPartiallyValidated.invalid() }
 
 }
 

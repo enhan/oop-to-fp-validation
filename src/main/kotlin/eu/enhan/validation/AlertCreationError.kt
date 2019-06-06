@@ -9,10 +9,11 @@ sealed class AlertCreationError {
         AlertCreationError()
     data class ThresholdCTooHigh(val incorrectValue: Int, val maxAllowedValue: Int):
         AlertCreationError()
-    data class ThresholdBNotInBetween(val incorrectValue: Int, val suppliedA: Int, val suppliedC: Int):
-        AlertCreationError()
 
-    object ThresholdBNotValidated: AlertCreationError()
+    object ThresholdsPartiallyValidated: AlertCreationError()
+
+    data class InvalidThresholdOrder(val tA: Int, val tB: Int, val tC: Int):
+        AlertCreationError()
 
     data class InvalidMetric(val incorrectValue: String?): AlertCreationError()
 
