@@ -40,7 +40,7 @@ open class AlertsControllerRefactored {
     private fun format(err: NonEmptyList<AlertCreationError>): Array<String> =err.map{ when (it) {
         is ThresholdATooLow -> "ThresholdA '${it.incorrectValue}' is too low. Min allowed value is ${it.minAllowedValue}"
         is ThresholdCTooHigh -> "ThresholdC '${it.incorrectValue}' is too high. Max allowed value is ${it.maxAllowedValue}"
-        is InvalidMetric -> "'${it.incorrectValue}' is not a valid metric"
+        is InvalidMetric -> "'${it.incorrectValue}' is not a valid metric but FOO & BAR are."
         NameEmpty -> "Name must not be empty"
         is InvalidHost -> "'${it.incorrectValue}' is not a valid host"
         ThresholdsPartiallyValidated -> "ThresholdB was not validated because ThresholdA or ThresholdC contains error"
